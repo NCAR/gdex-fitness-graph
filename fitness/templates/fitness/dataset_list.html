@@ -1,0 +1,19 @@
+{% extends "fitness/base.html" %}
+{% block title %}Datasets{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Datasets</h1>
+  <a class="btn primary" href="{% url 'dataset_create' %}">New dataset</a>
+</div>
+{% if rows %}
+<table class="data">
+  <thead><tr><th>Identifier</th><th>Title</th><th>Attached nodes</th><th></th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr><td><code>{{ r.dataset.external_id }}</code></td><td><a href="{% url 'dataset_detail' r.dataset.id %}">{{ r.dataset.title }}</a></td><td>{{ r.count }}</td>
+  <td><a href="{% url 'explorer' %}?dataset={{ r.dataset.id }}">Show on graph</a></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p class="empty">No datasets yet. <a href="{% url 'dataset_create' %}">Create one.</a></p>{% endif %}
+{% endblock %}

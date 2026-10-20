@@ -1,0 +1,2 @@
+# Runtime dependency. Python 3.10+ (tested on 3.11).
+Django>=5.2,<5.3

@@ -1,0 +1,50 @@
+{% extends "fitness/base.html" %}
+{% block title %}{{ dataset.title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ dataset.title }}</h1>
+  <div class="actions">
+    <a class="btn" href="{% url 'explorer' %}?dataset={{ dataset.id }}">Show on graph</a>
+    <a class="btn" href="{% url 'node_list' %}?dataset={{ dataset.id }}">List view</a>
+    <a class="btn" href="{% url 'dataset_edit' dataset.id %}">Edit</a>
+    <a class="btn danger" href="{% url 'dataset_delete' dataset.id %}">Delete…</a>
+  </div>
+</div>
+<p><code>{{ dataset.external_id }}</code>{% if dataset.url %} · <a href="{{ dataset.url }}" rel="noopener noreferrer" target="_blank">{{ dataset.url }}</a>{% endif %}</p>
+{% if dataset.description %}<p>{{ dataset.description }}</p>{% endif %}
+
+<div class="page-head">
+  <h2>Attached fitness guidance</h2>
+  <a class="btn primary" href="{% url 'attachment_create' dataset.id %}">Attach a node</a>
+</div>
+<p class="hint">Only nodes listed here have been explicitly attached by a curator. Fitness depends on the intended use; this is not a quality score.</p>
+{% if attached %}
+{% for row in attached %}
+<article class="card attached">
+  <h3><span class="badge badge-attached">✓ Attached</span> <a href="{% url 'node_detail' row.node.id %}">{{ row.node.title }}</a></h3>
+  {% if row.attachment.scope %}<p><strong>Scope:</strong> {{ row.attachment.scope }}</p>{% endif %}
+  {% if row.attachment.explanation %}<div class="qualification"><strong>Dataset-specific explanation</strong>{{ row.attachment.explanation|linebreaks }}</div>{% endif %}
+  {% if row.attachment.evidence_urls %}<p><strong>Evidence:</strong></p><ul>{% for u in row.attachment.evidence_urls %}<li><a href="{{ u }}" rel="noopener noreferrer" target="_blank">{{ u }}</a></li>{% endfor %}</ul>{% endif %}
+  <details><summary>General guidance for this node</summary>
+    <p><em>{{ row.node.summary }}</em></p>
+    {{ row.node.guidance|linebreaks }}
+    {% if row.node.considerations %}<ul>{% for c in row.node.considerations %}<li>{{ c }}</li>{% endfor %}</ul>{% endif %}
+  </details>
+  <p class="actions"><a href="{% url 'attachment_edit' row.attachment.id %}">Edit attachment</a> · <a href="{% url 'attachment_delete' row.attachment.id %}">Detach…</a></p>
+</article>
+{% endfor %}
+{% else %}<p class="empty">No fitness nodes are attached to this dataset yet.</p>{% endif %}
+
+{% if suggestions %}
+<h2>Connected nodes to consider</h2>
+<p class="hint">These nodes are related to attached nodes but are <strong>not attached</strong>. Whether they apply to this dataset is a curator decision.</p>
+<ul class="suggestions">
+{% for s in suggestions %}
+  <li><span class="badge badge-connected">◌ Connected, not attached</span>
+    <a href="{% url 'node_detail' s.node.id %}">{{ s.node.title }}</a>
+    <small>— {% for l in s.links %}{% if l.outgoing %}{{ l.attached_node.title }} <em>{{ l.label }}</em> this{% else %}this <em>{{ l.label }}</em> {{ l.attached_node.title }}{% endif %}{% if not forloop.last %}; {% endif %}{% endfor %}</small>
+    <a class="btn small" href="{% url 'attachment_create' dataset.id %}?node={{ s.node.id }}">Review &amp; attach…</a></li>
+{% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

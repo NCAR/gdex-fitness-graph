@@ -1,0 +1,7 @@
+{% extends "fitness/base.html" %}
+{% block content %}
+<h1>Storage file problem</h1>
+<p class="msg error">{{ error }}</p>
+{% if details %}<ul>{% for d in details %}<li>{{ d }}</li>{% endfor %}</ul>{% endif %}
+<p>Nothing has been written. The application will not replace this file with sample data.</p>
+{% endblock %}

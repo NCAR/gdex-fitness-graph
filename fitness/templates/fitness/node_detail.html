@@ -1,0 +1,41 @@
+{% extends "fitness/base.html" %}
+{% block title %}{{ node.title }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>{{ node.title }}</h1>
+  <div class="actions">
+    <a class="btn" href="{% url 'node_edit' node.id %}">Edit</a>
+    <a class="btn" href="{% url 'edge_create' %}?source={{ node.id }}">Add relationship</a>
+    <a class="btn danger" href="{% url 'node_delete' node.id %}">Delete…</a>
+  </div>
+</div>
+<p><code>{{ node.slug }}</code> {% for t in node.tags %}<span class="tag">{{ t }}</span> {% endfor %}</p>
+<p class="lead">{{ node.summary }}</p>
+<h2>Fitness guidance</h2>
+<div class="prose">{{ node.guidance|linebreaks }}</div>
+{% if node.considerations %}
+<h2>Considerations</h2>
+<ul>{% for c in node.considerations %}<li>{{ c }}</li>{% endfor %}</ul>
+{% endif %}
+{% if node.references %}
+<h2>References</h2>
+<ul>{% for r in node.references %}<li><a href="{{ r.url }}" rel="noopener noreferrer" target="_blank">{{ r.title }}</a></li>{% endfor %}</ul>
+{% endif %}
+<h2>Relationships</h2>
+<p class="hint">Descriptive only. They do not make connected nodes apply to any dataset.</p>
+{% if edges %}
+<ul>
+{% for e in edges %}
+  <li><a href="{% url 'node_detail' e.source.id %}">{{ e.source.title }}</a> — <em>{{ e.label }}</em> → <a href="{% url 'node_detail' e.target.id %}">{{ e.target.title }}</a>
+  {% if e.direction == "loop" %}<span class="tag">self-loop</span>{% endif %}
+  {% if e.edge.note %}<br><small>{{ e.edge.note }}</small>{% endif %}
+  <a class="small" href="{% url 'edge_edit' e.edge.id %}">edit</a></li>
+{% endfor %}
+</ul>
+{% else %}<p class="empty">No relationships yet.</p>{% endif %}
+<h2>Attached to datasets</h2>
+{% if attachments %}
+<ul>{% for a in attachments %}<li><a href="{% url 'dataset_detail' a.dataset.id %}">{{ a.dataset.external_id }} — {{ a.dataset.title }}</a>{% if a.attachment.scope %} <small>(scope: {{ a.attachment.scope }})</small>{% endif %}</li>{% endfor %}</ul>
+{% else %}<p class="empty">Not attached to any dataset.</p>{% endif %}
+{% if blockers %}<p class="hint">To delete this node first: {{ blockers|join:" " }}</p>{% endif %}
+{% endblock %}

@@ -1,0 +1,35 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}GDEX fitness graph{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'fitness/css/app.css' %}">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <a class="brand" href="{% url 'explorer' %}">GDEX fitness graph</a>
+  <nav aria-label="Main">
+    <a href="{% url 'explorer' %}">Graph</a>
+    <a href="{% url 'node_list' %}">Nodes</a>
+    <a href="{% url 'edge_list' %}">Relationships</a>
+    <a href="{% url 'rtype_list' %}">Relationship types</a>
+    <a href="{% url 'dataset_list' %}">Datasets</a>
+    <a href="{% url 'import_upload' %}">Import</a>
+    <a href="{% url 'export_json' %}">Export JSON</a>
+  </nav>
+</header>
+<main id="main">
+  {% if messages %}
+  <ul class="messages" role="status">
+    {% for message in messages %}<li class="msg {{ message.tags }}">{{ message }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="site-footer">
+  Fitness means suitability for a particular use, not a universal quality score. Relationships between nodes are descriptive only; only explicit attachments apply guidance to a dataset.
+</footer>
+</body>
+</html>

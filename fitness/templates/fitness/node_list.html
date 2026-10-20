@@ -1,0 +1,42 @@
+{% extends "fitness/base.html" %}
+{% block title %}Fitness nodes{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Fitness nodes</h1>
+  <div class="actions">
+    <a class="btn" href="{% url 'explorer' %}{% if dataset %}?dataset={{ dataset.id }}{% endif %}">Graph view</a>
+    <a class="btn primary" href="{% url 'node_create' %}">New node</a>
+  </div>
+</div>
+<form method="get" class="inline-form">
+  <label>Search <input type="search" name="q" value="{{ q }}" placeholder="title, guidance, tags"></label>
+  <label>Dataset
+    <select name="dataset">
+      <option value="">(none)</option>
+      {% for d in datasets %}<option value="{{ d.id }}"{% if dataset and dataset.id == d.id %} selected{% endif %}>{{ d.external_id }} — {{ d.title }}</option>{% endfor %}
+    </select>
+  </label>
+  <button class="btn" type="submit">Apply</button>
+</form>
+{% if dataset %}<p class="hint">Showing attachment status for <strong>{{ dataset.title }}</strong>. “Connected” only means a node shares a relationship with an attached node; it is not attached.</p>{% endif %}
+{% if rows %}
+<table class="data">
+  <thead><tr><th>Title</th><th>Summary</th><th>Tags</th><th>Relationships</th>{% if dataset %}<th>For this dataset</th>{% endif %}</tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr class="row-{{ r.status }}">
+    <td><a href="{% url 'node_detail' r.node.id %}">{{ r.node.title }}</a><br><code>{{ r.node.slug }}</code></td>
+    <td>{{ r.node.summary }}</td>
+    <td>{% for t in r.node.tags %}<span class="tag">{{ t }}</span> {% endfor %}</td>
+    <td>{{ r.edge_count }}</td>
+    {% if dataset %}<td>{% include "fitness/_status.html" with status=r.status %}{% if r.attachment and r.attachment.scope %}<br><small>Scope: {{ r.attachment.scope }}</small>{% endif %}</td>{% endif %}
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% elif total %}
+<p class="empty">No nodes match “{{ q }}”.</p>
+{% else %}
+<p class="empty">There are no fitness nodes yet. <a href="{% url 'node_create' %}">Create the first one.</a></p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "fitness/base.html" %}
+{% block title %}Import{% endblock %}
+{% block content %}
+<h1>Import graph JSON</h1>
+<p>Upload a file to validate it. Nothing changes until you review the summary and confirm. A confirmed import <strong>replaces the whole document</strong>; the previous one is kept as a backup in <code>.fitness-local/backups/</code>. <a href="{% url 'export_json' %}">Export the current graph</a> first if unsure.</p>
+<form method="post" enctype="multipart/form-data" class="stack">
+  {% csrf_token %}
+  <div class="field"><label for="file">JSON file</label><input id="file" type="file" name="file" accept="application/json,.json" required></div>
+  <div class="actions"><button class="btn primary" type="submit">Validate</button></div>
+</form>
+{% if errors %}
+<div class="msg error" role="alert"><p>The file was rejected and nothing was changed:</p>
+<ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>
+{% endif %}
+{% if preview %}
+<h2>Validation passed: {{ preview.filename }}</h2>
+<table class="data">
+  <thead><tr><th>Collection</th><th>Current</th><th>Imported</th><th>Added</th><th>Removed</th><th>Changed</th></tr></thead>
+  <tbody>{% for r in preview.summary %}<tr><td>{{ r.name }}</td><td>{{ r.current }}</td><td>{{ r.incoming }}</td><td>{{ r.added }}</td><td>{{ r.removed }}</td><td>{{ r.changed }}</td></tr>{% endfor %}</tbody>
+</table>
+<form method="post" action="{% url 'import_apply' %}" class="stack">
+  {% csrf_token %}
+  <input type="hidden" name="token" value="{{ preview.token }}">
+  <input type="hidden" name="revision" value="{{ preview.revision }}">
+  <label><input type="checkbox" name="confirm" value="yes" required> I understand this replaces the entire current graph with the validated document.</label>
+  <div class="actions"><button class="btn danger" type="submit">Replace current graph</button></div>
+</form>
+{% endif %}
+{% endblock %}

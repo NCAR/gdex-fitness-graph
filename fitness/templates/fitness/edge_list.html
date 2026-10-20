@@ -1,0 +1,22 @@
+{% extends "fitness/base.html" %}
+{% block title %}Relationships{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Relationships</h1>
+  <a class="btn primary" href="{% url 'edge_create' %}">New relationship</a>
+</div>
+<p class="hint">Relationships describe how nodes relate. They never attach guidance to a dataset.</p>
+{% if rows %}
+<table class="data">
+  <thead><tr><th>Source</th><th>Relationship</th><th>Target</th><th>Note</th><th></th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr><td><a href="{% url 'node_detail' r.source.id %}">{{ r.source.title }}</a></td><td><em>{{ r.label }}</em></td>
+  <td><a href="{% url 'node_detail' r.target.id %}">{{ r.target.title }}</a>{% if r.source.id == r.target.id %} <span class="tag">self-loop</span>{% endif %}</td>
+  <td>{{ r.edge.note }}</td>
+  <td><a href="{% url 'edge_edit' r.edge.id %}">Edit</a> · <a href="{% url 'edge_delete' r.edge.id %}">Delete…</a></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p class="empty">No relationships yet.</p>{% endif %}
+{% endblock %}

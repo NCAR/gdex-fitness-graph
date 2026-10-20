@@ -1,0 +1,326 @@
+{
+  "schema_version": 1,
+  "fitness_nodes": [
+    {
+      "id": "29185d5b-6ce4-494c-89db-fe2a44731874",
+      "slug": "changing-observing-systems",
+      "title": "Changing observing systems",
+      "summary": "The observations available to a product change over time, which can introduce artificial changes in the output.",
+      "guidance": "Over a multi-decade record, instruments, satellites, reporting practices and coverage change. A product that assimilates these observations can respond to such changes, creating shifts or drifts that are not physical.\n\nThis matters most for long-term trend, variability and extremes analyses, and less for studies of well-observed individual events. Where possible, compare against independent records and look for discontinuities near known changes in the observing network.",
+      "considerations": [
+        "Particularly relevant for multi-decadal trends and for comparisons between early and late periods.",
+        "Effects differ by variable, region and vertical level.",
+        "Independent, homogenised observational records can help assess whether a feature is physical."
+      ],
+      "tags": [
+        "homogeneity",
+        "trends"
+      ],
+      "references": []
+    },
+    {
+      "id": "2915046c-7b02-42b2-83a6-88c0839d9928",
+      "slug": "data-assimilation",
+      "title": "Data assimilation",
+      "summary": "Methods that combine observations with a model's short-range forecast to estimate the state of a system.",
+      "guidance": "Data assimilation adjusts a model state toward observations, weighting each by its estimated uncertainty. Where observations are dense and well characterised, the result is strongly constrained by them; where observations are sparse, the result relies more on the model and its background error assumptions.\n\nThe choice of assimilation method, the observation error assumptions and any bias-correction procedures can all influence the output, so two products using similar observations may still differ.",
+      "considerations": [
+        "Observational coverage varies by region, altitude and period, so the strength of observational constraint varies too.",
+        "Bias-correction of observations can interact with model biases.",
+        "Assimilation increments are not the same as measurement errors; do not treat them as an uncertainty estimate without further analysis."
+      ],
+      "tags": [
+        "assimilation",
+        "process"
+      ],
+      "references": []
+    },
+    {
+      "id": "37d6e09f-d4d2-450e-9ff1-36dfc918d03f",
+      "slug": "ensemble-uncertainty",
+      "title": "Ensemble uncertainty",
+      "summary": "Ensembles provide a spread of plausible states that can characterise some, but not all, sources of uncertainty.",
+      "guidance": "An ensemble runs multiple realisations with perturbed inputs, model settings or both. The spread among members can convey part of the uncertainty, but it reflects only the sources of uncertainty that were represented and may under- or over-estimate total uncertainty.\n\nIt is usually more informative to analyse the full distribution of members than only the ensemble mean, and to check the documentation for how the members were generated.",
+      "considerations": [
+        "Spread does not necessarily represent all sources of uncertainty, such as shared model structure.",
+        "The ensemble mean smooths variability that individual members contain.",
+        "Understand how members were produced before interpreting the spread."
+      ],
+      "tags": [
+        "ensemble",
+        "uncertainty"
+      ],
+      "references": []
+    },
+    {
+      "id": "1510dc94-f019-4df0-974e-fa0dc9c8f6d1",
+      "slug": "gridded-precipitation",
+      "title": "Gridded precipitation",
+      "summary": "Precipitation fields on a regular grid, derived from observations, models or a combination.",
+      "guidance": "Precipitation is highly variable in space and time, so gridded estimates depend strongly on the method used to produce them: gauge analyses, satellite retrievals, model output or blends of these. Each approach has different strengths, and errors are often larger for intense, localised or frozen precipitation and in regions with few observations.\n\nConsider the intended use (for example, mean climate, drought, or extremes) and look for evaluation of the product for that use and region.",
+      "considerations": [
+        "Quality depends on the density and type of underlying observations.",
+        "Intense and localised events, and frozen precipitation, are commonly harder to estimate.",
+        "Where precipitation comes from a model rather than direct assimilation, see model dependence."
+      ],
+      "tags": [
+        "gridded",
+        "precipitation"
+      ],
+      "references": []
+    },
+    {
+      "id": "deb74360-df54-43a4-99eb-d7b02737fa36",
+      "slug": "model-dependence",
+      "title": "Model dependence",
+      "summary": "Some variables are mostly determined by the underlying model rather than directly constrained by observations.",
+      "guidance": "In model-based products, variables that are not directly observed or only weakly constrained reflect the model's physics, parameterisations and biases. Results may therefore share systematic errors with other products built on similar models, and agreement between such products is not independent confirmation.\n\nWhen using a model-dependent variable, consider evaluation studies for that variable and, where feasible, comparison with independent observations.",
+      "considerations": [
+        "Systematic model biases can persist even when observations are assimilated.",
+        "Agreement between products from related models is not independent evidence.",
+        "Evaluate the specific variable and region of interest."
+      ],
+      "tags": [
+        "bias",
+        "model"
+      ],
+      "references": []
+    },
+    {
+      "id": "cac6ce30-20e0-4ff6-b544-4b5952cdf6b9",
+      "slug": "reanalysis",
+      "title": "Reanalysis",
+      "summary": "Gridded estimates of the atmosphere (or other Earth-system components) produced by running a fixed model with data assimilation over a long period.",
+      "guidance": "A reanalysis blends observations with a numerical model so that variables are available on a regular grid, including places and times without direct observations. This makes reanalyses convenient for many analyses, but the output is a model-informed estimate rather than a direct measurement.\n\nThe observations assimilated change over time, and variables the model generates without direct constraint (often including precipitation and surface fluxes) depend more heavily on model physics. Fitness therefore depends on the variable, region, period and use. Check whether apparent changes over time could reflect changes in the observing system before interpreting them as physical trends.",
+      "considerations": [
+        "Convenient, spatially complete fields for many process and climatology studies.",
+        "Variables closely constrained by assimilated observations are generally more reliable than those controlled mainly by model physics; the distinction varies by variable and region.",
+        "Apparent trends and step changes may partly reflect changes in assimilated observations.",
+        "Consult the producer's documentation and evaluation literature for the variable and period of interest."
+      ],
+      "tags": [
+        "gridded",
+        "model-based",
+        "reanalysis"
+      ],
+      "references": [
+        {
+          "title": "Hersbach et al. (2020), The ERA5 global reanalysis, Q. J. R. Meteorol. Soc.",
+          "url": "https://doi.org/10.1002/qj.3803"
+        }
+      ]
+    },
+    {
+      "id": "78618d52-486e-44b5-9205-41c338396813",
+      "slug": "spatial-resolution",
+      "title": "Spatial resolution",
+      "summary": "The grid spacing limits which spatial features a dataset can represent.",
+      "guidance": "Features smaller than a few grid cells are not explicitly resolved, and values on a grid cell represent an area-average rather than a point. Comparing gridded values to point observations, or using coarse data to study small-scale or sharply varying phenomena (for example convection, coastlines or complex terrain), needs care.\n\nA fine grid does not by itself imply that small-scale features are accurate; the underlying model and observations also matter.",
+      "considerations": [
+        "Area-average values differ from point measurements, especially for intermittent or highly variable quantities.",
+        "Terrain and coastlines are smoothed at coarser resolutions.",
+        "Finer grids do not guarantee greater accuracy."
+      ],
+      "tags": [
+        "grid",
+        "resolution"
+      ],
+      "references": []
+    },
+    {
+      "id": "b6eebac1-6fc8-4b04-9f43-7ed3210861db",
+      "slug": "temporal-resolution",
+      "title": "Temporal resolution",
+      "summary": "The output interval and averaging period determine which time-scale phenomena can be studied.",
+      "guidance": "Output may be instantaneous, or averaged or accumulated over an interval. Diurnal cycles, short-lived events and extremes can be misrepresented if the output interval is long compared with their duration, and averaged or accumulated variables must be interpreted according to their stated period.\n\nCheck whether a variable is instantaneous, an average or an accumulation, and the time convention (for example, interval start or end) before combining it with other data.",
+      "considerations": [
+        "Extremes in short-duration events may be smoothed in time-averaged output.",
+        "Accumulations and instantaneous values need different handling.",
+        "Check time conventions when comparing with observations."
+      ],
+      "tags": [
+        "resolution",
+        "time"
+      ],
+      "references": []
+    },
+    {
+      "id": "ffc4e0d6-10b4-4dcb-a9ca-bb4b921f94fd",
+      "slug": "test",
+      "title": "test",
+      "summary": "test",
+      "guidance": "blah",
+      "considerations": [
+        "blah"
+      ],
+      "tags": [],
+      "references": []
+    }
+  ],
+  "relationship_types": [
+    {
+      "key": "affected_by",
+      "label": "is affected by",
+      "description": "The source's behaviour or output can be influenced by the target. Descriptive only."
+    },
+    {
+      "key": "is_a_type_of",
+      "label": "is a type of",
+      "description": "The source is a specific kind of the target. Descriptive only: applying the source to a dataset does not apply the target."
+    },
+    {
+      "key": "may_have_limitation",
+      "label": "may have limitation",
+      "description": "The source may be subject to the limitation described by the target. Descriptive only."
+    },
+    {
+      "key": "related_to",
+      "label": "related to",
+      "description": "A general association between the two nodes. Descriptive only."
+    },
+    {
+      "key": "uses_process",
+      "label": "uses process",
+      "description": "The source typically relies on the process or method described by the target. Descriptive only."
+    }
+  ],
+  "edges": [
+    {
+      "id": "424104e1-5ba5-4c6d-a37c-98e9114bdfcd",
+      "source": "2915046c-7b02-42b2-83a6-88c0839d9928",
+      "relationship_type": "affected_by",
+      "target": "29185d5b-6ce4-494c-89db-fe2a44731874",
+      "note": ""
+    },
+    {
+      "id": "ec7ad9ea-7e24-4cc0-9f58-6a4bd9c6587c",
+      "source": "37d6e09f-d4d2-450e-9ff1-36dfc918d03f",
+      "relationship_type": "related_to",
+      "target": "deb74360-df54-43a4-99eb-d7b02737fa36",
+      "note": ""
+    },
+    {
+      "id": "6280195f-6fda-40d9-af6e-3296b4cf849c",
+      "source": "1510dc94-f019-4df0-974e-fa0dc9c8f6d1",
+      "relationship_type": "may_have_limitation",
+      "target": "deb74360-df54-43a4-99eb-d7b02737fa36",
+      "note": "Applies where precipitation is model-generated rather than directly observed."
+    },
+    {
+      "id": "284fbf39-9fb5-49f4-9e65-b7b2eeaedf9f",
+      "source": "1510dc94-f019-4df0-974e-fa0dc9c8f6d1",
+      "relationship_type": "related_to",
+      "target": "78618d52-486e-44b5-9205-41c338396813",
+      "note": ""
+    },
+    {
+      "id": "87984a70-365e-4341-a146-dd8720dd9956",
+      "source": "1510dc94-f019-4df0-974e-fa0dc9c8f6d1",
+      "relationship_type": "related_to",
+      "target": "b6eebac1-6fc8-4b04-9f43-7ed3210861db",
+      "note": ""
+    },
+    {
+      "id": "926c0dee-7cae-4be7-9388-e765586be56a",
+      "source": "cac6ce30-20e0-4ff6-b544-4b5952cdf6b9",
+      "relationship_type": "may_have_limitation",
+      "target": "29185d5b-6ce4-494c-89db-fe2a44731874",
+      "note": "Long records can contain artificial shifts as the assimilated observations change."
+    },
+    {
+      "id": "f12d9258-3db3-42b5-8cdd-129883fe913f",
+      "source": "cac6ce30-20e0-4ff6-b544-4b5952cdf6b9",
+      "relationship_type": "may_have_limitation",
+      "target": "deb74360-df54-43a4-99eb-d7b02737fa36",
+      "note": "Weakly observed variables depend more on the underlying model."
+    },
+    {
+      "id": "53ab12ac-faf6-42b9-949a-993b38727706",
+      "source": "cac6ce30-20e0-4ff6-b544-4b5952cdf6b9",
+      "relationship_type": "related_to",
+      "target": "37d6e09f-d4d2-450e-9ff1-36dfc918d03f",
+      "note": "Some reanalyses provide ensemble information; check the product documentation."
+    },
+    {
+      "id": "504c3b6b-bd99-4e2e-87b6-766fc123e0ff",
+      "source": "cac6ce30-20e0-4ff6-b544-4b5952cdf6b9",
+      "relationship_type": "related_to",
+      "target": "78618d52-486e-44b5-9205-41c338396813",
+      "note": ""
+    },
+    {
+      "id": "4f204bb5-a63b-4771-a8bc-b09a21776ffc",
+      "source": "cac6ce30-20e0-4ff6-b544-4b5952cdf6b9",
+      "relationship_type": "related_to",
+      "target": "b6eebac1-6fc8-4b04-9f43-7ed3210861db",
+      "note": ""
+    },
+    {
+      "id": "17183848-75a6-4db6-b03f-13de1854945e",
+      "source": "cac6ce30-20e0-4ff6-b544-4b5952cdf6b9",
+      "relationship_type": "uses_process",
+      "target": "2915046c-7b02-42b2-83a6-88c0839d9928",
+      "note": "Reanalyses are produced by running a model with data assimilation; they are not themselves a kind of assimilation."
+    }
+  ],
+  "datasets": [
+    {
+      "id": "9f66e797-1e04-4c2b-bdef-af7c97be202b",
+      "external_id": "d633000",
+      "title": "ERA5 Reanalysis (illustrative entry)",
+      "url": "https://rda.ucar.edu/datasets/d633000/",
+      "description": "Illustrative example entry for demonstrating the fitness graph. Not an authoritative description of the dataset; consult the producer's documentation."
+    },
+    {
+      "id": "9e88c0c9-d344-4189-a08e-dc59f4c8c4eb",
+      "external_id": "example-ens-0001",
+      "title": "Example Ensemble Climate Simulations (fictional)",
+      "url": "",
+      "description": "A fictional dataset that does not exist, used only to demonstrate ensemble-related guidance."
+    }
+  ],
+  "attachments": [
+    {
+      "id": "ea4c95c5-770f-41d4-9e7c-3329b2d23e36",
+      "dataset": "9f66e797-1e04-4c2b-bdef-af7c97be202b",
+      "node": "29185d5b-6ce4-494c-89db-fe2a44731874",
+      "scope": "Multi-decadal trend analysis, especially across the satellite era (around 1979)",
+      "explanation": "Illustrative curator example, not an authoritative fitness assessment. Example of a time-specific scope: be cautious interpreting trends that span major changes in the observing network.",
+      "evidence_urls": []
+    },
+    {
+      "id": "f0b9dd37-2698-4ca1-a617-0d6be558cdf4",
+      "dataset": "9f66e797-1e04-4c2b-bdef-af7c97be202b",
+      "node": "1510dc94-f019-4df0-974e-fa0dc9c8f6d1",
+      "scope": "Precipitation variables",
+      "explanation": "Illustrative curator example, not an authoritative fitness assessment. Example of a variable-specific scope: consider how precipitation is produced in the product before using it for the intended purpose.",
+      "evidence_urls": []
+    },
+    {
+      "id": "40683abd-d4fe-433a-8b8c-0a900c378522",
+      "dataset": "9f66e797-1e04-4c2b-bdef-af7c97be202b",
+      "node": "cac6ce30-20e0-4ff6-b544-4b5952cdf6b9",
+      "scope": "",
+      "explanation": "Illustrative curator example, not an authoritative fitness assessment. Applies to the dataset as a whole: it is a reanalysis, so output is a model-informed estimate.",
+      "evidence_urls": [
+        "https://doi.org/10.1002/qj.3803"
+      ]
+    },
+    {
+      "id": "3831e6b8-f805-47a6-ba83-9b4ad5717184",
+      "dataset": "9e88c0c9-d344-4189-a08e-dc59f4c8c4eb",
+      "node": "37d6e09f-d4d2-450e-9ff1-36dfc918d03f",
+      "scope": "Ensemble spread variables",
+      "explanation": "Illustrative curator example, not an authoritative fitness assessment. Fictional example: the spread among members is one indication of uncertainty and should not be treated as complete.",
+      "evidence_urls": []
+    },
+    {
+      "id": "e0d396eb-24c2-401f-b282-2b08a705afed",
+      "dataset": "9e88c0c9-d344-4189-a08e-dc59f4c8c4eb",
+      "node": "deb74360-df54-43a4-99eb-d7b02737fa36",
+      "scope": "",
+      "explanation": "Illustrative curator example, not an authoritative fitness assessment. Fictional example: results from this fictional ensemble reflect the single underlying model it was built from.",
+      "evidence_urls": []
+    }
+  ]
+}

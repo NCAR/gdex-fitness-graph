@@ -218,3 +218,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Fitness graph operational files (locks, backups, staged imports)
+.fitness-local/

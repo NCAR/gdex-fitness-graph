@@ -1,0 +1,20 @@
+{% extends "fitness/base.html" %}
+{% block title %}Relationship types{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Relationship types</h1>
+  <a class="btn primary" href="{% url 'rtype_create' %}">New relationship type</a>
+</div>
+<p class="hint">All relationship types are descriptive only. None implies applicability or inheritance. Keys are fixed once created.</p>
+{% if rows %}
+<table class="data">
+  <thead><tr><th>Label</th><th>Key</th><th>Description</th><th>Edges</th><th></th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr><td>{{ r.rtype.label }}</td><td><code>{{ r.rtype.key }}</code></td><td>{{ r.rtype.description }}</td><td>{{ r.uses }}</td>
+  <td><a href="{% url 'rtype_edit' r.rtype.key %}">Edit</a> · <a href="{% url 'rtype_delete' r.rtype.key %}">Delete…</a></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p class="empty">No relationship types yet. <a href="{% url 'rtype_create' %}">Create one</a> before adding relationships.</p>{% endif %}
+{% endblock %}

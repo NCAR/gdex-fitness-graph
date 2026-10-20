@@ -1,0 +1,62 @@
+{% extends "fitness/base.html" %}
+{% load static %}
+{% block title %}Graph explorer{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Graph explorer</h1>
+  <div class="actions">
+    <a class="btn" href="{% url 'node_list' %}{% if dataset %}?dataset={{ dataset.id }}{% endif %}">List view</a>
+    <a class="btn primary" href="{% url 'node_create' %}">New node</a>
+    <a class="btn primary" href="{% url 'edge_create' %}">New relationship</a>
+  </div>
+</div>
+
+<div class="toolbar">
+  <form method="get" class="inline-form">
+    <label>Dataset
+      <select name="dataset" onchange="this.form.submit()">
+        <option value="">(none selected)</option>
+        {% for d in datasets %}<option value="{{ d.id }}"{% if dataset and dataset.id == d.id %} selected{% endif %}>{{ d.external_id }} — {{ d.title }}</option>{% endfor %}
+      </select>
+    </label>
+    <noscript><button class="btn" type="submit">Show</button></noscript>
+  </form>
+  <label>Search <input type="search" id="graph-search" placeholder="title, guidance, tags" autocomplete="off"></label>
+  <label class="check"><input type="checkbox" id="focus-toggle" disabled> Focus on selected node and its neighbours</label>
+  <button type="button" class="btn" id="fit-btn">Fit to view</button>
+  <button type="button" class="btn" id="reset-btn">Reset layout</button>
+</div>
+<p id="search-status" class="hint" aria-live="polite"></p>
+{% if dataset %}
+<p class="hint">Highlighting guidance explicitly attached to <strong><a href="{% url 'dataset_detail' dataset.id %}">{{ dataset.title }}</a></strong>. Connected nodes are shown only for consideration; they are not attached.</p>
+{% endif %}
+
+<div class="explorer">
+  <div class="graph-wrap">
+    <svg id="graph-svg" role="img" aria-label="Graph of fitness nodes and their relationships"></svg>
+    <div id="graph-empty" class="graph-empty" hidden>
+      <p>There are no fitness nodes to draw yet.</p>
+      <p><a class="btn primary" href="{% url 'node_create' %}">Create a node</a></p>
+    </div>
+    <noscript><p class="msg error">JavaScript is needed for the graph. Use the <a href="{% url 'node_list' %}">list view</a> instead.</p></noscript>
+  </div>
+  <aside id="details" class="details" aria-live="polite" aria-label="Node details"></aside>
+</div>
+
+<section class="legend" aria-label="Legend">
+  <h2>Legend</h2>
+  <ul>
+    <li><svg width="34" height="34" aria-hidden="true"><circle class="lg-attached" cx="17" cy="17" r="12"/><text x="17" y="17" dy="0.35em" text-anchor="middle" class="lg-mark">✓</text></svg> Attached to the selected dataset (solid fill and ✓)</li>
+    <li><svg width="34" height="34" aria-hidden="true"><circle class="lg-connected" cx="17" cy="17" r="12"/><text x="17" y="17" dy="0.35em" text-anchor="middle" class="lg-mark2">◌</text></svg> Connected to an attached node, not attached (dashed outline and ◌)</li>
+    <li><svg width="34" height="34" aria-hidden="true"><circle class="lg-other" cx="17" cy="17" r="12"/></svg> Other node (plain outline)</li>
+    <li><svg width="34" height="34" aria-hidden="true"><circle class="lg-ring" cx="17" cy="17" r="15"/><circle class="lg-other" cx="17" cy="17" r="10"/></svg> Selected (extra thick outer ring)</li>
+    <li><svg width="34" height="34" aria-hidden="true"><circle class="lg-other lg-dim" cx="17" cy="17" r="12"/></svg> Faded: does not match the search</li>
+    <li><svg width="60" height="34" aria-hidden="true"><line x1="4" y1="17" x2="52" y2="17" class="lg-edge"/><path d="M56,17 L48,13 L48,21 z" class="arrow"/></svg> Relationship, drawn from source to target and labelled; parallel and reciprocal edges bow apart, loops circle the node</li>
+  </ul>
+  <p class="hint">Drag nodes to pin them (double-click to release), scroll to zoom, drag the background to pan. Relationships are descriptive and never make guidance apply automatically.</p>
+</section>
+
+{{ graph|json_script:"graph-data" }}
+<script src="{% static 'fitness/vendor/d3.v7.9.0.min.js' %}"></script>
+<script type="module" src="{% static 'fitness/js/main.js' %}"></script>
+{% endblock %}

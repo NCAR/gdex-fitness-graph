@@ -1,0 +1,20 @@
+{% extends "fitness/base.html" %}
+{% block title %}Confirm deletion{% endblock %}
+{% block content %}
+<h1>Delete {{ subject }}?</h1>
+{% if blockers %}
+<div class="msg error" role="alert">
+  <p>This cannot be deleted yet:</p>
+  <ul>{% for b in blockers %}<li>{{ b }}</li>{% endfor %}</ul>
+</div>
+<p><a class="btn" href="{{ back }}">Back</a></p>
+{% else %}
+<p>This removes it from the JSON document. You can review or revert the change in Git.</p>
+<form method="post" class="actions">
+  {% csrf_token %}
+  <input type="hidden" name="revision" value="{{ revision }}">
+  <button type="submit" class="btn danger">Delete</button>
+  <a class="btn" href="{{ back }}">Cancel</a>
+</form>
+{% endif %}
+{% endblock %}
