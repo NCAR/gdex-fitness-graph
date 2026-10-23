@@ -221,3 +221,6 @@ __marimo__/
 
 # Fitness graph operational files (locks, backups, staged imports)
 .fitness-local/
+
+# collectstatic output
+staticfiles/

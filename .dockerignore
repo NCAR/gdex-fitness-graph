@@ -1,0 +1,8 @@
+.git
+.github
+.fitness-local
+app-chart
+__pycache__
+*.pyc
+staticfiles
+requirements
