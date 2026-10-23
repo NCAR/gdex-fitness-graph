@@ -1,0 +1,34 @@
+# The app keeps its state in a single JSON file guarded by a node-local flock,
+# so it must run as exactly one replica (hence no replicaCount value).
+
+webapp:
+  name: gdex-fitness-graph
+  group: gdex-fitness-graph
+  path: /
+  tls:
+    fqdn: data-card.k8s.ucar.edu
+    secretName: incommon-cert-gdex-fitness-graph
+  container:
+    image: hub.k8s.ucar.edu/riley_gdex_test/gdex-fitness-graph:latest
+    port: 8080
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+    responseTimeout: 60
+    maxUploadSize: 10m
+  ingress:
+    ingressClassName: nginx-internal
+  # Writable data directory. emptyDir: the graph (and .fitness-local lock,
+  # backups, staged imports) is re-seeded from the example JSON baked into the
+  # image whenever the pod restarts, so edits are NOT persistent.
+  data:
+    mountPath: /data
+    fileName: fitness_graph.json
+    sizeLimit: 100Mi
+  # Optional: name of an existing Secret holding DJANGO_SECRET_KEY under the key
+  # `secret-key`. Empty uses the app's built-in prototype key.
+  secretKey:
+    existingSecret: ""

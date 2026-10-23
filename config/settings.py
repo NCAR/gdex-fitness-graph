@@ -12,7 +12,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # if you ever expose this beyond localhost (which is out of scope).
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "insecure-local-prototype-key")
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]", "testserver"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]", "testserver"] + [
+    h for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(",") if h
+]
+# Needed when TLS terminates at an ingress (e.g. "https://data-card.k8s.ucar.edu").
+CSRF_TRUSTED_ORIGINS = [
+    o for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o
+]
 
 # Location of the canonical JSON document.
 FITNESS_GRAPH_PATH = Path(
@@ -29,6 +35,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -65,4 +72,6 @@ USE_I18N = False
 USE_TZ = True
 
 STATIC_URL = "static/"
+# Target of ``collectstatic`` in the container image; served by WhiteNoise.
+STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
