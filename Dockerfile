@@ -14,7 +14,7 @@ COPY manage.py ./
 COPY config/ ./config/
 COPY fitness/ ./fitness/
 # Example graph; the chart's init container seeds the writable data volume from it.
-COPY data/ ./data/
+COPY --chmod=a+rX data/ ./data/
 
 RUN DJANGO_DEBUG=0 python manage.py collectstatic --noinput
 
