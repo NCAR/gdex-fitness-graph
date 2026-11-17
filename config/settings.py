@@ -22,10 +22,6 @@ CSRF_TRUSTED_ORIGINS = [
 
 # One canonical JSON document per user: <FITNESS_USERS_DIR>/<name>.json, served at /u/<name>/.
 FITNESS_USERS_DIR = Path(os.environ.get("FITNESS_USERS_DIR", BASE_DIR / "data" / "users"))
-# Template copied (through schema validation) when a new user's graph is created.
-FITNESS_GRAPH_PATH = Path(
-    os.environ.get("FITNESS_GRAPH_PATH", BASE_DIR / "data" / "fitness_graph.json")
-)
 # When "1", every save is committed and pushed from the git checkout at FITNESS_GIT_REPO.
 FITNESS_GIT_SYNC = os.environ.get("FITNESS_GIT_SYNC", "0") == "1"
 FITNESS_GIT_REPO = Path(os.environ.get("FITNESS_GIT_REPO", BASE_DIR / "data"))

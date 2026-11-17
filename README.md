@@ -17,7 +17,7 @@ pip install -r requirements.txt
 python manage.py runserver
 ```
 
-Open <http://127.0.0.1:8000/> and create a graph. Each user has their own graph at `/u/<name>/`; a new one starts as a copy of the committed example (`data/fitness_graph.json`), stored in `data/users/<name>.json` (git-ignored locally). No `migrate` step is needed: no database is configured.
+Open <http://127.0.0.1:8000/> and create a graph. Each user has their own graph at `/u/<name>/`; a new one starts blank, stored in `data/users/<name>.json` (git-ignored locally). No `migrate` step is needed: no database is configured.
 
 Run the tests and the Django checks:
 
@@ -33,7 +33,6 @@ Tests use a temporary copy of the example data and assert that the committed fil
 | Setting / env var | Default | Meaning |
 |---|---|---|
 | `FITNESS_USERS_DIR` | `data/users` | Directory of per-user JSON documents (`<name>.json`). |
-| `FITNESS_GRAPH_PATH` | `data/fitness_graph.json` | Template copied when a new user's graph is created. |
 | `FITNESS_GIT_SYNC` | `0` | `1` commits and pushes each saved file from the checkout at `FITNESS_GIT_REPO`. |
 | `FITNESS_GIT_REPO` | `data/` | Git checkout containing `FITNESS_USERS_DIR`. Push credentials come from git (in the container, `GIT_TOKEN` via `GIT_ASKPASS`). |
 | `DJANGO_DEBUG` | `1` | `0` disables debug mode. |

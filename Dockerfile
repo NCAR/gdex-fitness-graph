@@ -22,7 +22,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY manage.py ./
 COPY config/ ./config/
 COPY fitness/ ./fitness/
-# Example graph: the template copied for each newly created user graph.
+# Example graph (not used at runtime; new user graphs start blank).
 COPY --chmod=a+rX data/ ./data/
 
 RUN DJANGO_DEBUG=0 python manage.py collectstatic --noinput

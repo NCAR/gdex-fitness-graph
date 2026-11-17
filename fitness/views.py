@@ -634,12 +634,10 @@ def user_create(request):
         if path.exists():
             form.add_error("username", "That graph already exists; pick it from the list.")
         else:
-            template = schema.load_document(
-                json.loads(Path(settings.FITNESS_GRAPH_PATH).read_text(encoding="utf-8"))
-            )
             store = GraphStore(path, after_write=_sync_callback(request, name))
+            blank = schema.empty_document()
             try:
-                store.update(schema.revision_of(schema.empty_document()), lambda _doc: template, replace=True)
+                store.update(schema.revision_of(blank), lambda _doc: blank, replace=True)
             except ConflictError:
                 form.add_error("username", "That graph already exists; pick it from the list.")
             else:
