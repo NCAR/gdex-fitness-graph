@@ -17,7 +17,7 @@ pip install -r requirements.txt
 python manage.py runserver
 ```
 
-Open <http://127.0.0.1:8000/>. The committed example graph (`data/fitness_graph.json`) is loaded by default. No `migrate` step is needed: no database is configured.
+Open <http://127.0.0.1:8000/> and create a graph. Each user has their own graph at `/u/<name>/`; a new one starts as a copy of the committed example (`data/fitness_graph.json`), stored in `data/users/<name>.json` (git-ignored locally). No `migrate` step is needed: no database is configured.
 
 Run the tests and the Django checks:
 
@@ -32,10 +32,13 @@ Tests use a temporary copy of the example data and assert that the committed fil
 
 | Setting / env var | Default | Meaning |
 |---|---|---|
-| `FITNESS_GRAPH_PATH` | `data/fitness_graph.json` | Path of the JSON document. Set in the environment before `runserver`. |
+| `FITNESS_USERS_DIR` | `data/users` | Directory of per-user JSON documents (`<name>.json`). |
+| `FITNESS_GRAPH_PATH` | `data/fitness_graph.json` | Template copied when a new user's graph is created. |
+| `FITNESS_GIT_SYNC` | `0` | `1` commits and pushes each saved file from the checkout at `FITNESS_GIT_REPO`. |
+| `FITNESS_GIT_REPO` | `data/` | Git checkout containing `FITNESS_USERS_DIR`. Push credentials come from git (in the container, `GIT_TOKEN` via `GIT_ASKPASS`). |
 | `DJANGO_DEBUG` | `1` | `0` disables debug mode. |
 
-A missing file is treated as an empty graph and created on the first save. A malformed or invalid file is **never** overwritten or replaced with sample data; pages show an error until you fix or restore it (for example with `git checkout`).
+A user's graph must be created from the landing page; visiting an unknown `/u/<name>/` is a 404. A malformed or invalid file is **never** overwritten or replaced with sample data; pages show an error until you fix or restore it (for example with `git checkout`).
 
 ## Concepts
 
@@ -92,14 +95,18 @@ Deleting is blocked while something references the item: nodes with edges or att
 
 ## Where data is saved, and reviewing in Git
 
-Every change rewrites `data/fitness_graph.json` (or `FITNESS_GRAPH_PATH`) atomically (temp file + `fsync` + rename). Review and revert with ordinary Git:
+Every change rewrites the user's file (`<FITNESS_USERS_DIR>/<name>.json`) atomically (temp file + `fsync` + rename). Review and revert with ordinary Git:
 
 ```bash
-git diff data/fitness_graph.json
-git checkout -- data/fitness_graph.json   # discard uncontrolled edits
+git diff users/jane-doe.json
+git checkout -- users/jane-doe.json   # discard uncontrolled edits
 ```
 
 Operational files go to `.fitness-local/` next to the data file (lock file, import backups, staged imports) and are git-ignored.
+
+### GitHub sync (Kubernetes)
+
+With `FITNESS_GIT_SYNC=1`, each save is followed by `git add` / `commit` (author = the user name) / `push` of that user's file, serialized across workers by a lock in `.git`. A rejected push is rebased once. A failed push never fails the save: the user sees a warning and the commit is pushed with the next save. In the Helm chart an init container clones `webapp.dataRepo.url` onto the (ephemeral) data volume, so GitHub is the durable store. Setup: create a data repo with an initial commit, create a fine-grained PAT with Contents read/write on it, store it as a Secret with key `token`, and set `webapp.dataRepo.url` and `webapp.dataRepo.existingSecret`.
 
 ### Concurrency
 
@@ -134,8 +141,8 @@ Editing is by ordinary forms (nodes, relationships, relationship types, datasets
 
 ## Prototype limitations
 
-- Local single-user tool: **no authentication or authorization**, no deployment configuration, no integration with live GDEX services. Do not expose it to a network.
-- Storage is one local JSON file with POSIX file locking; it is not designed for large graphs or many concurrent users (graphs of a few hundred nodes are fine).
+- **No authentication or authorization.** Anyone who can reach the app can open or edit any user's graph by changing the URL. Acceptable only on an internal network. No integration with live GDEX services.
+- Storage is one JSON file per user with POSIX file locking on a single replica; it is not designed for large graphs or many concurrent users (graphs of a few hundred nodes are fine).
 - Revision checking is document-wide, so unrelated concurrent edits cause a conflict message rather than a merge.
 - Backups are written only for imports; ordinary edits rely on Git history.
 - Uploaded files are limited to 5 MiB.

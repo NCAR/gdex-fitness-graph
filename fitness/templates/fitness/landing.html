@@ -1,0 +1,26 @@
+{% extends "fitness/base.html" %}
+{% block title %}Choose a graph · GDEX fitness graph{% endblock %}
+{% block content %}
+<h1>Choose a graph</h1>
+{% if users %}
+<ul>
+  {% for name in users %}<li><a href="{{ site_root }}u/{{ name }}/">{{ name }}</a></li>{% endfor %}
+</ul>
+{% else %}
+<p class="hint">No graphs yet. Create the first one below.</p>
+{% endif %}
+<h2>Create a new graph</h2>
+<p class="hint">A new graph starts as a copy of the example data.</p>
+<form method="post" action="{% url 'user_create' %}" class="stack">
+  {% csrf_token %}
+  {% for field in form %}
+  <div class="field{% if field.errors %} has-error{% endif %}">
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {% if field.help_text %}<small class="hint">{{ field.help_text }}</small>{% endif %}
+    {% for e in field.errors %}<small class="error-text" role="alert">{{ e }}</small>{% endfor %}
+  </div>
+  {% endfor %}
+  <div class="actions"><button type="submit" class="btn primary">Create</button></div>
+</form>
+{% endblock %}

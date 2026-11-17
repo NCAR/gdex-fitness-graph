@@ -5,6 +5,7 @@ from pathlib import Path
 
 from django.conf import settings
 from django.test import SimpleTestCase, override_settings
+from django.urls import get_script_prefix, set_script_prefix
 
 from fitness import schema
 from fitness.store import GraphStore
@@ -18,12 +19,19 @@ class TempGraphCase(SimpleTestCase):
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
-        self.path = Path(self._tmp.name) / "graph.json"
+        self.users_dir = Path(self._tmp.name) / "users"
+        self.users_dir.mkdir()
+        self.user = "tester"
+        self.path = self.users_dir / f"{self.user}.json"
         shutil.copy(EXAMPLE, self.path)
         self._example_before = EXAMPLE.read_bytes()
-        override = override_settings(FITNESS_GRAPH_PATH=self.path)
+        override = override_settings(FITNESS_USERS_DIR=self.users_dir, FITNESS_GRAPH_PATH=EXAMPLE)
         override.enable()
         self.addCleanup(override.disable)
+        # Existing tests call reverse() outside a request; make it behave as under /u/tester/.
+        previous = get_script_prefix()
+        set_script_prefix(f"/u/{self.user}/")
+        self.addCleanup(set_script_prefix, previous)
         self.addCleanup(self._example_untouched)
         self.store = GraphStore(self.path)
 

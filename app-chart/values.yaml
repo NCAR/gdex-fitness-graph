@@ -1,4 +1,4 @@
-# The app keeps its state in a single JSON file guarded by a node-local flock,
+# The app keeps its state in per-user JSON files guarded by node-local flocks,
 # so it must run as exactly one replica (hence no replicaCount value).
 
 webapp:
@@ -21,13 +21,18 @@ webapp:
     maxUploadSize: 10m
   ingress:
     ingressClassName: nginx-internal
-  # Writable data directory. emptyDir: the graph (and .fitness-local lock,
-  # backups, staged imports) is re-seeded from the example JSON baked into the
-  # image whenever the pod restarts, so edits are NOT persistent.
+  # Writable data directory (emptyDir). The init container clones the data repo
+  # into <mountPath>/repo; every save is committed and pushed, so GitHub is the
+  # durable store and a restarted pod simply re-clones.
   data:
     mountPath: /data
-    fileName: fitness_graph.json
     sizeLimit: 100Mi
+  # GitHub repo holding users/<name>.json (needs an initial commit on its default
+  # branch). existingSecret: Secret with key `token`, a fine-grained PAT with
+  # Contents read/write on that repo only.
+  dataRepo:
+    url: ""            # e.g. https://github.com/<org>/gdex-fitness-graph-data.git
+    existingSecret: ""
   # Optional: name of an existing Secret holding DJANGO_SECRET_KEY under the key
   # `secret-key`. Empty uses the app's built-in prototype key.
   secretKey:

@@ -4,12 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}GDEX fitness graph{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'fitness/css/gdex-theme-vars.css' %}">
   <link rel="stylesheet" href="{% static 'fitness/css/app.css' %}">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
-  <a class="brand" href="{% url 'explorer' %}">GDEX fitness graph</a>
+  <a class="brand" href="{% if graph_user %}{% url 'explorer' %}{% else %}{{ site_root }}users/{% endif %}">GDEX fitness graph</a>
+  {% if graph_user %}
   <nav aria-label="Main">
     <a href="{% url 'explorer' %}">Graph</a>
     <a href="{% url 'node_list' %}">Nodes</a>
@@ -18,7 +20,9 @@
     <a href="{% url 'dataset_list' %}">Datasets</a>
     <a href="{% url 'import_upload' %}">Import</a>
     <a href="{% url 'export_json' %}">Export JSON</a>
+    <a href="{{ site_root }}users/" title="Switch graph">{{ graph_user }} ▾</a>
   </nav>
+  {% endif %}
 </header>
 <main id="main">
   {% if messages %}
