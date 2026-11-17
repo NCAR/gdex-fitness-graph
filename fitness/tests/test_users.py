@@ -1,3 +1,4 @@
+import json
 import shutil
 import subprocess
 import tempfile
@@ -7,7 +8,7 @@ from unittest import mock
 from django.test import Client, override_settings
 from django.urls import get_script_prefix, reverse
 
-from fitness import gitsync
+from fitness import gitsync, operations, schema
 
 from .base import TempGraphCase
 
@@ -42,12 +43,13 @@ class UserRoutingTests(TempGraphCase):
     def test_unscoped_user_page_is_404(self):
         self.assertEqual(self.client.get("/nodes/").status_code, 404)
 
-    def test_create_user_seeds_from_template_and_is_isolated(self):
+    def test_create_user_starts_blank_and_is_isolated(self):
         resp = self.client.post("/users/new/", {"username": " New-User "})
         self.assertRedirects(resp, "/u/new-user/", fetch_redirect_response=False)
         new_path = self.users_dir / "new-user.json"
         self.assertTrue(new_path.exists())
-        self.assertEqual(new_path.read_text(), self.path.read_text())
+        created = json.loads(new_path.read_text())
+        self.assertEqual(created, schema.empty_document())
         before = self.path.read_bytes()
         node = self.client.get("/u/new-user/nodes/")
         self.assertEqual(node.status_code, 200)
@@ -56,9 +58,11 @@ class UserRoutingTests(TempGraphCase):
 
         store = GraphStore(new_path)
         snap = store.read()
-        store.update(snap.revision, lambda d: d["fitness_nodes"].pop() and None)
+        store.update(snap.revision, lambda d: operations.create_node(
+            d, dict(title="N", summary="s", guidance="g", considerations=[], tags=[], references=[])
+        ))
         self.assertEqual(self.path.read_bytes(), before)
-        self.assertNotEqual(new_path.read_text(), self.path.read_text())
+        self.assertEqual(len(json.loads(new_path.read_text())["fitness_nodes"]), 1)
 
     def test_create_rejects_duplicates_and_bad_names(self):
         self.assertEqual(self.client.post("/users/new/", {"username": "tester"}).status_code, 200)

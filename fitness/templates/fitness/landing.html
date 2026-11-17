@@ -10,7 +10,7 @@
 <p class="hint">No graphs yet. Create the first one below.</p>
 {% endif %}
 <h2>Create a new graph</h2>
-<p class="hint">A new graph starts as a copy of the example data.</p>
+<p class="hint">A new graph starts blank.</p>
 <form method="post" action="{% url 'user_create' %}" class="stack">
   {% csrf_token %}
   {% for field in form %}

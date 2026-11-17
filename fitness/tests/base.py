@@ -25,7 +25,7 @@ class TempGraphCase(SimpleTestCase):
         self.path = self.users_dir / f"{self.user}.json"
         shutil.copy(EXAMPLE, self.path)
         self._example_before = EXAMPLE.read_bytes()
-        override = override_settings(FITNESS_USERS_DIR=self.users_dir, FITNESS_GRAPH_PATH=EXAMPLE)
+        override = override_settings(FITNESS_USERS_DIR=self.users_dir)
         override.enable()
         self.addCleanup(override.disable)
         # Existing tests call reverse() outside a request; make it behave as under /u/tester/.
