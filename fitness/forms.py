@@ -3,6 +3,8 @@
 Forms only parse and validate input; persistence goes through operations.py and
 GraphStore. Every form carries the document ``revision`` it was rendered from.
 """
+import re
+
 from django import forms
 
 from . import schema
@@ -182,3 +184,20 @@ class AttachmentForm(RevisionForm):
             if not schema.is_http_url(url):
                 raise forms.ValidationError(f"Line {number}: '{url}' is not a valid http(s) URL.")
         return urls
+
+
+USERNAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
+
+
+class UserCreateForm(forms.Form):
+    username = forms.CharField(
+        label="Name",
+        max_length=40,
+        help_text="Lowercase letters, digits and hyphens (e.g. jane-doe). It becomes part of the URL.",
+    )
+
+    def clean_username(self):
+        value = self.cleaned_data["username"].strip().lower()
+        if not USERNAME_RE.match(value):
+            raise forms.ValidationError("Use only lowercase letters, digits and hyphens, starting with a letter or digit.")
+        return value

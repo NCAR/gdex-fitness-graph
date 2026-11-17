@@ -7,7 +7,7 @@ metadata:
     app: {{ .Values.webapp.name }}
     group: {{ .Values.webapp.group }}
 spec:
-  # Single writer: the JSON file lock is not shared across pods.
+  # Single writer: the per-user JSON file locks are not shared across pods.
   replicas: 1
   strategy:
     type: Recreate
@@ -28,14 +28,28 @@ spec:
         emptyDir:
           sizeLimit: {{ .Values.webapp.data.sizeLimit }}
       initContainers:
-      # Seed the empty data volume with the example graph.
-      - name: seed-data
+      # Clone the data repo (one JSON file per user) onto the empty data volume.
+      - name: clone-data
         image: {{ .Values.webapp.container.image }}
         imagePullPolicy: Always
         command:
-        - cp
-        - /app/data/{{ .Values.webapp.data.fileName }}
-        - {{ .Values.webapp.data.mountPath }}/{{ .Values.webapp.data.fileName }}
+        - sh
+        - -ec
+        - |
+          if [ ! -d "$DATA_DIR/repo/.git" ]; then
+            git clone "$DATA_REPO_URL" "$DATA_DIR/repo"
+          fi
+          mkdir -p "$DATA_DIR/repo/users"
+        env:
+        - name: DATA_DIR
+          value: {{ .Values.webapp.data.mountPath }}
+        - name: DATA_REPO_URL
+          value: {{ required "webapp.dataRepo.url is required" .Values.webapp.dataRepo.url | quote }}
+        - name: GIT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ required "webapp.dataRepo.existingSecret is required" .Values.webapp.dataRepo.existingSecret }}
+              key: token
         volumeMounts:
         - name: data
           mountPath: {{ .Values.webapp.data.mountPath }}
@@ -67,8 +81,17 @@ spec:
           value: {{ .Values.webapp.tls.fqdn | quote }}
         - name: DJANGO_CSRF_TRUSTED_ORIGINS
           value: {{ printf "https://%s" .Values.webapp.tls.fqdn | quote }}
-        - name: FITNESS_GRAPH_PATH
-          value: {{ .Values.webapp.data.mountPath }}/{{ .Values.webapp.data.fileName }}
+        - name: FITNESS_USERS_DIR
+          value: {{ .Values.webapp.data.mountPath }}/repo/users
+        - name: FITNESS_GIT_SYNC
+          value: "1"
+        - name: FITNESS_GIT_REPO
+          value: {{ .Values.webapp.data.mountPath }}/repo
+        - name: GIT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.webapp.dataRepo.existingSecret }}
+              key: token
         {{- if .Values.webapp.secretKey.existingSecret }}
         - name: DJANGO_SECRET_KEY
           valueFrom:

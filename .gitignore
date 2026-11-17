@@ -224,3 +224,4 @@ __marimo__/
 
 # collectstatic output
 staticfiles/
+data/users/

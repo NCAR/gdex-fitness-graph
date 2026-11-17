@@ -1,6 +1,8 @@
 """Views. They talk to ``GraphStore`` and ``operations``, never to the JSON file."""
 import functools
 import json
+import logging
+from pathlib import Path
 
 from django.conf import settings
 from django.contrib import messages
@@ -9,12 +11,37 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from . import forms, operations as ops, queries, schema
+from . import forms, gitsync, operations as ops, queries, schema
 from .store import ConflictError, GraphStore, StorageError
 
+logger = logging.getLogger(__name__)
 
-def get_store():
-    return GraphStore(settings.FITNESS_GRAPH_PATH)
+
+def _sync_callback(request, user):
+    """Commit+push a written file when git sync is enabled; a failed push never fails the save."""
+    if not settings.FITNESS_GIT_SYNC:
+        return None
+
+    def after_write(written):
+        try:
+            gitsync.sync_file(settings.FITNESS_GIT_REPO, written, user)
+        except gitsync.GitSyncError as exc:
+            logger.warning("git sync failed for %s: %s", user, exc)
+            messages.warning(
+                request,
+                "Saved locally, but pushing to GitHub failed; it will be retried on the next save.",
+            )
+
+    return after_write
+
+
+def get_store(request):
+    """Store for the user in the URL (``/u/<name>/``)."""
+    user = getattr(request, "graph_user", None)
+    if not user:
+        raise Http404("No graph selected")
+    path = Path(settings.FITNESS_USERS_DIR) / f"{user}.json"
+    return GraphStore(path, after_write=_sync_callback(request, user))
 
 
 def storage_guard(view):
@@ -43,7 +70,7 @@ def _get(items, key, value):
     raise Http404("Not found")
 
 
-def _submit(form, mutate):
+def _submit(request, form, mutate):
     """Run ``mutate(doc, cleaned_data)`` under the store lock.
 
     Returns ``(True, result)`` on success. On failure the problem is attached to
@@ -55,7 +82,7 @@ def _submit(form, mutate):
         out.append(mutate(doc, form.cleaned_data))
 
     try:
-        get_store().update(form.cleaned_data["revision"], apply)
+        get_store(request).update(form.cleaned_data["revision"], apply)
     except ConflictError as exc:
         data = form.data.copy()
         data["revision"] = exc.current
@@ -80,7 +107,7 @@ def _form_page(request, snap, build, mutate, *, title, on_success, success_messa
     if request.method == "POST":
         form = build(request.POST, snap.doc)
         if form.is_valid():
-            ok, result = _submit(form, mutate)
+            ok, result = _submit(request, form, mutate)
             if ok:
                 messages.success(request, success_message)
                 return redirect(on_success(result))
@@ -97,7 +124,7 @@ def _delete_page(request, snap, *, subject, blockers, mutate, back, after, succe
         form = forms.RevisionForm(request.POST)
         if form.is_valid():
             try:
-                get_store().update(form.cleaned_data["revision"], mutate)
+                get_store(request).update(form.cleaned_data["revision"], mutate)
             except ConflictError:
                 messages.error(
                     request, "The data changed while you were reviewing this deletion. Check it again."
@@ -125,7 +152,7 @@ def _selected_dataset(request, doc):
 
 @storage_guard
 def explorer(request):
-    snap = get_store().read()
+    snap = get_store(request).read()
     dataset = _selected_dataset(request, snap.doc)
     payload = queries.graph_payload(snap.doc, dataset["id"] if dataset else None, _url)
     return render(
@@ -149,7 +176,7 @@ def _matches(node, q):
 
 @storage_guard
 def node_list(request):
-    snap = get_store().read()
+    snap = get_store(request).read()
     dataset = _selected_dataset(request, snap.doc)
     status = queries.node_status_map(snap.doc, dataset["id"] if dataset else None)
     attachments = queries.attachments_for_dataset(snap.doc, dataset["id"]) if dataset else {}
@@ -184,7 +211,7 @@ def node_list(request):
 
 @storage_guard
 def node_detail(request, node_id):
-    snap = get_store().read()
+    snap = get_store(request).read()
     doc = snap.doc
     node = _get(doc["fitness_nodes"], "id", str(node_id))
     nodes = queries.by_id(doc, "fitness_nodes")
@@ -208,7 +235,7 @@ def node_detail(request, node_id):
 
 @storage_guard
 def node_create(request):
-    snap = get_store().read()
+    snap = get_store(request).read()
     return _form_page(
         request, snap,
         lambda data, doc: forms.NodeForm(data, initial={"revision": snap.revision}),
@@ -221,7 +248,7 @@ def node_create(request):
 
 @storage_guard
 def node_edit(request, node_id):
-    snap = get_store().read()
+    snap = get_store(request).read()
     node = _get(snap.doc["fitness_nodes"], "id", str(node_id))
     return _form_page(
         request, snap,
@@ -238,7 +265,7 @@ def node_edit(request, node_id):
 
 @storage_guard
 def node_delete(request, node_id):
-    snap = get_store().read()
+    snap = get_store(request).read()
     node = _get(snap.doc["fitness_nodes"], "id", str(node_id))
     return _delete_page(
         request, snap, subject=f"fitness node “{node['title']}”",
@@ -254,7 +281,7 @@ def node_delete(request, node_id):
 
 @storage_guard
 def rtype_list(request):
-    snap = get_store().read()
+    snap = get_store(request).read()
     uses = {}
     for e in snap.doc["edges"]:
         uses[e["relationship_type"]] = uses.get(e["relationship_type"], 0) + 1
@@ -264,7 +291,7 @@ def rtype_list(request):
 
 @storage_guard
 def rtype_create(request):
-    snap = get_store().read()
+    snap = get_store(request).read()
     return _form_page(
         request, snap,
         lambda data, doc: forms.RelationshipTypeForm(data, initial={"revision": snap.revision}),
@@ -276,7 +303,7 @@ def rtype_create(request):
 
 @storage_guard
 def rtype_edit(request, key):
-    snap = get_store().read()
+    snap = get_store(request).read()
     rtype = _get(snap.doc["relationship_types"], "key", key)
     return _form_page(
         request, snap,
@@ -292,7 +319,7 @@ def rtype_edit(request, key):
 
 @storage_guard
 def rtype_delete(request, key):
-    snap = get_store().read()
+    snap = get_store(request).read()
     rtype = _get(snap.doc["relationship_types"], "key", key)
     return _delete_page(
         request, snap, subject=f"relationship type “{rtype['label']}”",
@@ -308,7 +335,7 @@ def rtype_delete(request, key):
 
 @storage_guard
 def edge_list(request):
-    snap = get_store().read()
+    snap = get_store(request).read()
     nodes = queries.by_id(snap.doc, "fitness_nodes")
     rtypes = queries.by_id(snap.doc, "relationship_types", "key")
     rows = [
@@ -322,7 +349,7 @@ def edge_list(request):
 
 @storage_guard
 def edge_create(request):
-    snap = get_store().read()
+    snap = get_store(request).read()
     initial = {"revision": snap.revision}
     for field in ("source", "target", "relationship_type"):
         if request.GET.get(field):
@@ -339,7 +366,7 @@ def edge_create(request):
 
 @storage_guard
 def edge_edit(request, edge_id):
-    snap = get_store().read()
+    snap = get_store(request).read()
     edge = _get(snap.doc["edges"], "id", str(edge_id))
     return _form_page(
         request, snap,
@@ -353,7 +380,7 @@ def edge_edit(request, edge_id):
 
 @storage_guard
 def edge_delete(request, edge_id):
-    snap = get_store().read()
+    snap = get_store(request).read()
     edge = _get(snap.doc["edges"], "id", str(edge_id))
     nodes = queries.by_id(snap.doc, "fitness_nodes")
     label = queries.by_id(snap.doc, "relationship_types", "key")[edge["relationship_type"]]["label"]
@@ -370,7 +397,7 @@ def edge_delete(request, edge_id):
 
 @storage_guard
 def dataset_list(request):
-    snap = get_store().read()
+    snap = get_store(request).read()
     counts = {}
     for a in snap.doc["attachments"]:
         counts[a["dataset"]] = counts.get(a["dataset"], 0) + 1
@@ -380,7 +407,7 @@ def dataset_list(request):
 
 @storage_guard
 def dataset_detail(request, dataset_id):
-    snap = get_store().read()
+    snap = get_store(request).read()
     doc = snap.doc
     dataset = _get(doc["datasets"], "id", str(dataset_id))
     nodes = queries.by_id(doc, "fitness_nodes")
@@ -403,7 +430,7 @@ def dataset_detail(request, dataset_id):
 
 @storage_guard
 def dataset_create(request):
-    snap = get_store().read()
+    snap = get_store(request).read()
     return _form_page(
         request, snap,
         lambda data, doc: forms.DatasetForm(data, initial={"revision": snap.revision}),
@@ -416,7 +443,7 @@ def dataset_create(request):
 
 @storage_guard
 def dataset_edit(request, dataset_id):
-    snap = get_store().read()
+    snap = get_store(request).read()
     dataset = _get(snap.doc["datasets"], "id", str(dataset_id))
     return _form_page(
         request, snap,
@@ -431,7 +458,7 @@ def dataset_edit(request, dataset_id):
 
 @storage_guard
 def dataset_delete(request, dataset_id):
-    snap = get_store().read()
+    snap = get_store(request).read()
     dataset = _get(snap.doc["datasets"], "id", str(dataset_id))
     return _delete_page(
         request, snap, subject=f"dataset “{dataset['title']}”",
@@ -444,7 +471,7 @@ def dataset_delete(request, dataset_id):
 
 @storage_guard
 def attachment_create(request, dataset_id):
-    snap = get_store().read()
+    snap = get_store(request).read()
     dataset = _get(snap.doc["datasets"], "id", str(dataset_id))
     initial = {"revision": snap.revision, "node": request.GET.get("node", "")}
     return _form_page(
@@ -461,7 +488,7 @@ def attachment_create(request, dataset_id):
 
 @storage_guard
 def attachment_edit(request, attachment_id):
-    snap = get_store().read()
+    snap = get_store(request).read()
     att = _get(snap.doc["attachments"], "id", str(attachment_id))
     node = queries.by_id(snap.doc, "fitness_nodes")[att["node"]]
     dataset = queries.by_id(snap.doc, "datasets")[att["dataset"]]
@@ -485,7 +512,7 @@ def attachment_edit(request, attachment_id):
 
 @storage_guard
 def attachment_delete(request, attachment_id):
-    snap = get_store().read()
+    snap = get_store(request).read()
     att = _get(snap.doc["attachments"], "id", str(attachment_id))
     node = queries.by_id(snap.doc, "fitness_nodes")[att["node"]]
     dataset = queries.by_id(snap.doc, "datasets")[att["dataset"]]
@@ -502,7 +529,7 @@ def attachment_delete(request, attachment_id):
 
 @storage_guard
 def export_json(request):
-    snap = get_store().read()
+    snap = get_store(request).read()
     response = HttpResponse(schema.dumps(snap.doc), content_type="application/json; charset=utf-8")
     response["Content-Disposition"] = 'attachment; filename="fitness_graph.json"'
     return response
@@ -529,7 +556,7 @@ def _import_summary(current, new):
 
 @storage_guard
 def import_upload(request):
-    store = get_store()
+    store = get_store(request)
     snap = store.read()
     context = {"errors": [], "preview": None}
     if request.method == "POST":
@@ -563,7 +590,7 @@ def import_apply(request):
         messages.error(request, "Import not applied: it was not confirmed.")
         return redirect("import_upload")
     try:
-        get_store().apply_import(request.POST.get("revision", ""), request.POST.get("token", ""))
+        get_store(request).apply_import(request.POST.get("revision", ""), request.POST.get("token", ""))
     except ConflictError:
         messages.error(
             request,
@@ -576,3 +603,46 @@ def import_apply(request):
         return redirect("import_upload")
     messages.success(request, "Import applied. The previous document was kept as a backup in .fitness-local/backups/.")
     return redirect("explorer")
+
+
+# -- user selection (site root, outside /u/<name>/) ------------------------------
+
+
+def list_users():
+    folder = Path(settings.FITNESS_USERS_DIR)
+    if not folder.is_dir():
+        return []
+    return sorted(p.stem for p in folder.glob("*.json") if forms.USERNAME_RE.match(p.stem))
+
+
+def landing(request):
+    """Pick an existing graph or create a new one. Unauthenticated by design (internal tool)."""
+    return render(
+        request,
+        "fitness/landing.html",
+        {"users": list_users(), "form": forms.UserCreateForm()},
+    )
+
+
+@require_POST
+@storage_guard
+def user_create(request):
+    form = forms.UserCreateForm(request.POST)
+    if form.is_valid():
+        name = form.cleaned_data["username"]
+        path = Path(settings.FITNESS_USERS_DIR) / f"{name}.json"
+        if path.exists():
+            form.add_error("username", "That graph already exists; pick it from the list.")
+        else:
+            template = schema.load_document(
+                json.loads(Path(settings.FITNESS_GRAPH_PATH).read_text(encoding="utf-8"))
+            )
+            store = GraphStore(path, after_write=_sync_callback(request, name))
+            try:
+                store.update(schema.revision_of(schema.empty_document()), lambda _doc: template, replace=True)
+            except ConflictError:
+                form.add_error("username", "That graph already exists; pick it from the list.")
+            else:
+                messages.success(request, f"Created graph for {name}.")
+                return redirect(f"{request.site_root}u/{name}/")
+    return render(request, "fitness/landing.html", {"users": list_users(), "form": form})

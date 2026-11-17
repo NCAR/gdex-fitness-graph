@@ -46,8 +46,10 @@ class Snapshot:
 
 
 class GraphStore:
-    def __init__(self, path):
+    def __init__(self, path, after_write=None):
+        """``after_write(path)`` runs after each successful write, outside the data lock."""
         self.path = Path(path)
+        self.after_write = after_write
         self.state_dir = self.path.parent / ".fitness-local"
 
     # -- reading ----------------------------------------------------------
@@ -107,7 +109,10 @@ class GraphStore:
             if backup and self.path.exists():
                 self._backup(current.revision)
             self._write_atomic(new_doc)
-            return Snapshot(new_doc, schema.revision_of(new_doc))
+            snapshot = Snapshot(new_doc, schema.revision_of(new_doc))
+        if self.after_write is not None:
+            self.after_write(self.path)
+        return snapshot
 
     def _backup(self, revision):
         backups = self.state_dir / "backups"

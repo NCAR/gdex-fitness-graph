@@ -1,6 +1,6 @@
 """Settings for the local curator prototype.
 
-Domain data lives in a JSON file (see ``FITNESS_GRAPH_PATH``), not in a
+Domain data lives in one JSON file per user (see ``FITNESS_USERS_DIR``), not in a
 database, so no database is configured and no sessions are used.
 """
 import os
@@ -20,10 +20,15 @@ CSRF_TRUSTED_ORIGINS = [
     o for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o
 ]
 
-# Location of the canonical JSON document.
+# One canonical JSON document per user: <FITNESS_USERS_DIR>/<name>.json, served at /u/<name>/.
+FITNESS_USERS_DIR = Path(os.environ.get("FITNESS_USERS_DIR", BASE_DIR / "data" / "users"))
+# Template copied (through schema validation) when a new user's graph is created.
 FITNESS_GRAPH_PATH = Path(
     os.environ.get("FITNESS_GRAPH_PATH", BASE_DIR / "data" / "fitness_graph.json")
 )
+# When "1", every save is committed and pushed from the git checkout at FITNESS_GIT_REPO.
+FITNESS_GIT_SYNC = os.environ.get("FITNESS_GIT_SYNC", "0") == "1"
+FITNESS_GIT_REPO = Path(os.environ.get("FITNESS_GIT_REPO", BASE_DIR / "data"))
 # Maximum size accepted for an uploaded import file.
 FITNESS_IMPORT_MAX_BYTES = 5 * 1024 * 1024
 
@@ -36,6 +41,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "fitness.middleware.UserPrefixMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
@@ -53,6 +59,7 @@ TEMPLATES = [
             "context_processors": [
                 "django.template.context_processors.request",
                 "django.contrib.messages.context_processors.messages",
+                "fitness.context.user",
             ],
         },
     },
@@ -71,7 +78,8 @@ TIME_ZONE = "UTC"
 USE_I18N = False
 USE_TZ = True
 
-STATIC_URL = "static/"
+# Absolute: a relative value would pick up the per-request /u/<name>/ script prefix.
+STATIC_URL = "/static/"
 # Target of ``collectstatic`` in the container image; served by WhiteNoise.
 STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
