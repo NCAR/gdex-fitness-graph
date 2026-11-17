@@ -9,7 +9,7 @@ webapp:
     fqdn: data-card.k8s.ucar.edu
     secretName: incommon-cert-gdex-fitness-graph
   container:
-    image: hub.k8s.ucar.edu/riley_gdex_test/gdex-fitness-graph:latest
+    image: hub.k8s.ucar.edu/riley_gdex_test/gdex-fitness-graph:v44180048574
     port: 8080
     requests:
       memory: 128Mi
