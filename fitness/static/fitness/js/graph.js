@@ -155,6 +155,8 @@ export function init(root = document) {
     selectedId: null,
     query: "",
     focusOnly: false,
+    // With a dataset selected, show only nodes explicitly attached to it unless the user opts out.
+    attachedOnly: Boolean(JSON.parse(dataEl.textContent).dataset_id),
     positions: new Map(), // id -> {x, y, fx, fy}
     nodes: [], // current simulation copies
     links: [],
@@ -169,6 +171,8 @@ export function init(root = document) {
     search: root.getElementById("graph-search"),
     searchStatus: root.getElementById("search-status"),
     focus: root.getElementById("focus-toggle"),
+    attached: root.getElementById("attached-toggle"),
+    scopeStatus: root.getElementById("scope-status"),
     fit: root.getElementById("fit-btn"),
     reset: root.getElementById("reset-btn"),
   };
@@ -200,9 +204,36 @@ export function init(root = document) {
 
   // ---- building
 
+  /** Nodes eligible to be drawn before focus filtering: attached ones only, or all. */
+  function scopeIds() {
+    const nodes = state.attachedOnly ? state.data.nodes.filter((n) => n.status === "attached") : state.data.nodes;
+    return new Set(nodes.map((n) => n.id));
+  }
+
   function visibleIds() {
-    if (state.focusOnly && state.selectedId) return neighborhoodIds(state.data.edges, state.selectedId);
-    return new Set(state.data.nodes.map((n) => n.id));
+    const scope = scopeIds();
+    if (state.focusOnly && state.selectedId) {
+      return new Set([...neighborhoodIds(state.data.edges, state.selectedId)].filter((id) => scope.has(id)));
+    }
+    return scope;
+  }
+
+  function syncScopeControls() {
+    if (els.attached) {
+      els.attached.disabled = !state.data.dataset_id;
+      els.attached.checked = state.attachedOnly;
+    }
+    if (!els.scopeStatus) return;
+    if (!state.attachedOnly) {
+      els.scopeStatus.textContent = "";
+      return;
+    }
+    const shown = scopeIds().size;
+    const hidden = state.data.nodes.length - shown;
+    els.scopeStatus.textContent =
+      shown === 0
+        ? "No nodes are attached to this dataset yet. Untick “Show only attached nodes” to see all nodes."
+        : `Showing ${shown} attached node${shown === 1 ? "" : "s"}; ${hidden} other${hidden === 1 ? "" : "s"} hidden.`;
   }
 
   function snapshotPositions() {
@@ -382,6 +413,7 @@ export function init(root = document) {
   }
 
   function refreshStates() {
+    syncScopeControls();
     const searching = state.query.trim() !== "";
     const matches = matchSet();
     nodeSel
@@ -418,7 +450,11 @@ export function init(root = document) {
   function select(id) {
     const changed = id !== state.selectedId;
     state.selectedId = id;
-    if (!id && state.focusOnly) {
+    if (id && state.attachedOnly && !scopeIds().has(id)) {
+      // Selecting a hidden node (e.g. from a relationship link): reveal everything.
+      state.attachedOnly = false;
+      rebuild({ refit: true });
+    } else if (!id && state.focusOnly) {
       state.focusOnly = false;
       rebuild({ refit: true });
     } else if (state.focusOnly && changed) {
@@ -460,6 +496,15 @@ export function init(root = document) {
   els.search.addEventListener("input", () => {
     state.query = els.search.value;
     refreshStates();
+  });
+  els.attached?.addEventListener("change", () => {
+    state.attachedOnly = els.attached.checked && Boolean(state.data.dataset_id);
+    if (state.selectedId && !scopeIds().has(state.selectedId)) {
+      state.selectedId = null;
+      state.focusOnly = false;
+      renderDetails();
+    }
+    rebuild({ refit: true });
   });
   els.focus.addEventListener("change", () => {
     state.focusOnly = els.focus.checked && Boolean(state.selectedId);
@@ -582,7 +627,10 @@ export function init(root = document) {
     els.search.value = state.query;
   }
   const preselect = state.data.nodes.find((n) => n.slug === params.get("select"));
-  if (preselect) state.selectedId = preselect.id;
+  if (preselect) {
+    state.selectedId = preselect.id;
+    if (!scopeIds().has(preselect.id)) state.attachedOnly = false;
+  }
   rebuild({ refit: true });
   renderDetails();
   return state;
