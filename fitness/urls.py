@@ -2,6 +2,7 @@ from django.urls import path
 
 from . import views
 
+
 urlpatterns = [
     path("", views.explorer, name="explorer"),
     path("nodes/", views.node_list, name="node_list"),
