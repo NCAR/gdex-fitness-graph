@@ -31,8 +31,8 @@ webapp:
   # branch). existingSecret: Secret with key `token`, a fine-grained PAT with
   # Contents read/write on that repo only.
   dataRepo:
-    url: ""            # e.g. https://github.com/<org>/gdex-fitness-graph-data.git
-    existingSecret: ""
+    url: https://github.com/NCAR/gdex-fitness-graph-data.git
+    existingSecret: gdex-fitness-graph-git
   # Optional: name of an existing Secret holding DJANGO_SECRET_KEY under the key
   # `secret-key`. Empty uses the app's built-in prototype key.
   secretKey:
