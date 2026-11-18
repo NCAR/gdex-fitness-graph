@@ -22,7 +22,15 @@
     <noscript><button class="btn" type="submit">Show</button></noscript>
   </form>
   <label>Search <input type="search" id="graph-search" placeholder="title, guidance, tags" autocomplete="off"></label>
-  <label class="check"><input type="checkbox" id="attached-toggle"{% if dataset %} checked{% else %} disabled{% endif %}> Show only attached nodes</label>
+  <label>Generations from attached nodes
+    <select id="generations-select"{% if not dataset %} disabled{% endif %}>
+      <option value="0">0 (attached only)</option>
+      <option value="1" selected>1</option>
+      <option value="2">2</option>
+      <option value="3">3</option>
+      <option value="all">All nodes</option>
+    </select>
+  </label>
   <label class="check"><input type="checkbox" id="focus-toggle" disabled> Focus on selected node and its neighbours</label>
   <button type="button" class="btn" id="fit-btn">Fit to view</button>
   <button type="button" class="btn" id="reset-btn">Reset layout</button>
@@ -30,7 +38,7 @@
 <p id="search-status" class="hint" aria-live="polite"></p>
 <p id="scope-status" class="hint" aria-live="polite"></p>
 {% if dataset %}
-<p class="hint">Highlighting guidance explicitly attached to <strong><a href="{% url 'dataset_detail' dataset.id %}">{{ dataset.title }}</a></strong>. Only attached nodes are shown; untick “Show only attached nodes” to also see connected and other nodes. Connected nodes are shown only for consideration; they are not attached.</p>
+<p class="hint">Highlighting guidance explicitly attached to <strong><a href="{% url 'dataset_detail' dataset.id %}">{{ dataset.title }}</a></strong>. Attached nodes are shown with nodes up to the chosen number of relationships (generations) away, in either direction; change “Generations” to show fewer or more. Nodes that are not attached are shown only for consideration.</p>
 {% endif %}
 
 <div class="explorer">
