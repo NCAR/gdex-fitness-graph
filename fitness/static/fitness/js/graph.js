@@ -15,6 +15,8 @@ const NODE_R = 20;
 const LABEL_MAX = 44; // total characters shown, across at most two lines
 const LABEL_LINE = 22; // wrap width in characters
 const LINK_DISTANCE = 240;
+// With a dataset selected: show attached nodes and those this many relationships away.
+const DEFAULT_GENERATIONS = 1;
 const COLLIDE_R = 80; // wide enough that neighbouring two-line labels do not overlap
 const PARALLEL_SPACING = 56; // control-point offset between parallel edges
 const MAX_SYNC_NODES = 300; // above this, let the layout animate instead of pre-settling
@@ -155,8 +157,9 @@ export function init(root = document) {
     selectedId: null,
     query: "",
     focusOnly: false,
-    // With a dataset selected, show only nodes explicitly attached to it unless the user opts out.
-    attachedOnly: Boolean(JSON.parse(dataEl.textContent).dataset_id),
+    // With a dataset selected, show attached nodes plus those within this many relationship
+    // hops of one (either direction). Display only: it never makes a node attached.
+    generations: JSON.parse(dataEl.textContent).dataset_id ? DEFAULT_GENERATIONS : Infinity,
     positions: new Map(), // id -> {x, y, fx, fy}
     nodes: [], // current simulation copies
     links: [],
@@ -171,7 +174,7 @@ export function init(root = document) {
     search: root.getElementById("graph-search"),
     searchStatus: root.getElementById("search-status"),
     focus: root.getElementById("focus-toggle"),
-    attached: root.getElementById("attached-toggle"),
+    generations: root.getElementById("generations-select"),
     scopeStatus: root.getElementById("scope-status"),
     fit: root.getElementById("fit-btn"),
     reset: root.getElementById("reset-btn"),
@@ -204,10 +207,30 @@ export function init(root = document) {
 
   // ---- building
 
-  /** Nodes eligible to be drawn before focus filtering: attached ones only, or all. */
+  /** Hops from the nearest attached node (0 = attached), following edges in either direction. */
+  const distance = (() => {
+    const adj = new Map(state.data.nodes.map((n) => [n.id, []]));
+    for (const e of state.data.edges) {
+      adj.get(e.source)?.push(e.target);
+      adj.get(e.target)?.push(e.source);
+    }
+    const dist = new Map(state.data.nodes.map((n) => [n.id, Infinity]));
+    const queue = state.data.nodes.filter((n) => n.status === "attached").map((n) => n.id);
+    for (const id of queue) dist.set(id, 0);
+    for (let i = 0; i < queue.length; i++) {
+      for (const next of adj.get(queue[i])) {
+        if (dist.get(next) === Infinity) {
+          dist.set(next, dist.get(queue[i]) + 1);
+          queue.push(next);
+        }
+      }
+    }
+    return dist;
+  })();
+
+  /** Nodes eligible to be drawn before focus filtering. */
   function scopeIds() {
-    const nodes = state.attachedOnly ? state.data.nodes.filter((n) => n.status === "attached") : state.data.nodes;
-    return new Set(nodes.map((n) => n.id));
+    return new Set(state.data.nodes.filter((n) => distance.get(n.id) <= state.generations).map((n) => n.id));
   }
 
   function visibleIds() {
@@ -219,21 +242,23 @@ export function init(root = document) {
   }
 
   function syncScopeControls() {
-    if (els.attached) {
-      els.attached.disabled = !state.data.dataset_id;
-      els.attached.checked = state.attachedOnly;
+    if (els.generations) {
+      els.generations.disabled = !state.data.dataset_id;
+      els.generations.value = Number.isFinite(state.generations) ? String(state.generations) : "all";
     }
     if (!els.scopeStatus) return;
-    if (!state.attachedOnly) {
+    if (!Number.isFinite(state.generations)) {
       els.scopeStatus.textContent = "";
       return;
     }
     const shown = scopeIds().size;
     const hidden = state.data.nodes.length - shown;
+    const attached = state.data.nodes.filter((n) => n.status === "attached").length;
+    const within = state.generations === 0 ? "" : ` and nodes within ${state.generations} relationship${state.generations === 1 ? "" : "s"} of them`;
     els.scopeStatus.textContent =
-      shown === 0
-        ? "No nodes are attached to this dataset yet. Untick “Show only attached nodes” to see all nodes."
-        : `Showing ${shown} attached node${shown === 1 ? "" : "s"}; ${hidden} other${hidden === 1 ? "" : "s"} hidden.`;
+      attached === 0
+        ? "No nodes are attached to this dataset yet. Choose “All” under Generations to see every node."
+        : `Showing ${attached} attached node${attached === 1 ? "" : "s"}${within}: ${shown} of ${state.data.nodes.length} nodes (${hidden} hidden).`;
   }
 
   function snapshotPositions() {
@@ -399,7 +424,11 @@ export function init(root = document) {
     linkSel.each((d) => {
       d.geometry = linkGeometry(d);
     });
-    linkSel.selectAll("path").attr("d", (d) => d.geometry.d);
+    // select() (not selectAll) re-binds the parent's current datum to each child. Links that
+    // survive a rebuild keep their <g>/<path> elements, and selectAll would leave the paths
+    // holding the previous link object, i.e. arrows drawn at the old node positions.
+    linkSel.select(".link-path").attr("d", (d) => d.geometry.d);
+    linkSel.select(".link-hit").attr("d", (d) => d.geometry.d);
     linkSel
       .select("text")
       .attr("x", (d) => d.geometry.lx)
@@ -450,9 +479,9 @@ export function init(root = document) {
   function select(id) {
     const changed = id !== state.selectedId;
     state.selectedId = id;
-    if (id && state.attachedOnly && !scopeIds().has(id)) {
+    if (id && !scopeIds().has(id)) {
       // Selecting a hidden node (e.g. from a relationship link): reveal everything.
-      state.attachedOnly = false;
+      state.generations = Infinity;
       rebuild({ refit: true });
     } else if (!id && state.focusOnly) {
       state.focusOnly = false;
@@ -497,8 +526,8 @@ export function init(root = document) {
     state.query = els.search.value;
     refreshStates();
   });
-  els.attached?.addEventListener("change", () => {
-    state.attachedOnly = els.attached.checked && Boolean(state.data.dataset_id);
+  els.generations?.addEventListener("change", () => {
+    state.generations = els.generations.value === "all" ? Infinity : Number(els.generations.value);
     if (state.selectedId && !scopeIds().has(state.selectedId)) {
       state.selectedId = null;
       state.focusOnly = false;
@@ -629,7 +658,7 @@ export function init(root = document) {
   const preselect = state.data.nodes.find((n) => n.slug === params.get("select"));
   if (preselect) {
     state.selectedId = preselect.id;
-    if (!scopeIds().has(preselect.id)) state.attachedOnly = false;
+    if (!scopeIds().has(preselect.id)) state.generations = Infinity;
   }
   rebuild({ refit: true });
   renderDetails();
